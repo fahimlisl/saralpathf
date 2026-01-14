@@ -8,18 +8,24 @@ import { Marksheet } from "../models/marksheet.models.js";
 import { generateAccessAndRefreshToken } from "../utils/generateAccessAndRefreshToken.js";
 
 const registerTeacher = asyncHandler(async (req, res) => {
-  const { fullName, email, phoneNumber, subject, password
-    // , classAssigned 
-  } =
-    req.body;
+  const {
+    fullName,
+    email,
+    phoneNumber,
+    subject,
+    password,
+    // , classAssigned
+  } = req.body;
 
   if (
-    [fullName, email, phoneNumber, subject, password, 
+    [
+      fullName,
+      email,
+      phoneNumber,
+      subject,
+      password,
       // classAssigned
-
-    ].some(
-      (f) => !f && f !== 0
-    )
+    ].some((f) => !f && f !== 0)
   ) {
     throw new ApiError(401, "all fields are required");
   }
@@ -79,13 +85,13 @@ const loginTeacher = asyncHandler(async (req, res) => {
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-    loggingTeacher._id,Teacher
+    loggingTeacher._id,
+    Teacher
   );
 
   const loggedInTeacher = await Teacher.findById(loggingTeacher._id).select(
     "-password -refreshToken"
   );
-
 
   return res
     .status(200)
@@ -94,7 +100,7 @@ const loginTeacher = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        {  loginUser: loggedInTeacher, accessToken, refreshToken},
+        { loginUser: loggedInTeacher, accessToken, refreshToken },
         "teacher logged in successfully"
       )
     );
@@ -136,78 +142,53 @@ const logOutTeacher = asyncHandler(async (req, res) => {
 });
 
 
-// const assignMarksToStudent = asyncHandler(async (req, res) => {
-//   const teacherId = req.user._id;
-//   const studentId = req.params.id;
+const assignMarksToStudent = asyncHandler(async (req, res) => {
+  const teacherId = req.user._id;         
+  const subjectId = req.params.id;        
+  const { term, obtainedMarks } = req.body;
 
-//   const { term, obtainedMarks } = req.body;
-//   // const term = 1;  // i can hardcore if i want later
+  if (!term || obtainedMarks === undefined) {
+    throw new ApiError(400, "term and obtainedMarks are required");
+  }
 
-//   if (!obtainedMarks) {
-//     throw new ApiError(400, "obtainedMarks required");
-//   }
+  const marksheet = await Marksheet.findOne({
+    "terms.subjects._id": subjectId,
+  });
 
-//   const marksheet = await Marksheet.findOne({ student: studentId });
+  if (!marksheet) {
+    throw new ApiError(404, "Marksheet not found");
+  }
 
-//   if (!marksheet) {
-//     throw new ApiError(404, "Marksheet not found");
-//   }
+  const termObj = marksheet.terms.find(t => t.term === Number(term));
 
-//   const termObj = marksheet.terms.find((t) => t.term === term);
+  if (!termObj) {
+    throw new ApiError(404, "Term not found");
+  }
 
-//   if (!termObj) {
-//     throw new ApiError(404, "Term not found");
-//   }
+  const subjectObj = termObj.subjects.find(
+    s => String(s._id) === String(subjectId)
+  );
 
-//   // finding the subject where the teacherId matches
-//   const subjectObj = termObj.subjects.find(
-//     (s) => String(s.teacher) === String(teacherId)
-//   );
-//   if (!subjectObj) {
-//     throw new ApiError(403, "You are not allowed to update this subject");
-//   }
+  if (!subjectObj) {
+    throw new ApiError(404, "Subject not found");
+  }
 
-//   subjectObj.obtainedMarks = obtainedMarks;
-//   subjectObj.isSubmitted = true;
+  if (String(subjectObj.teacher) !== String(teacherId)) {
+    throw new ApiError(403, "You are not allowed to update this subject");
+  }
 
-//   // logic for percentage calculation
+  subjectObj.obtainedMarks = obtainedMarks;
+  subjectObj.isSubmitted = true;
+  subjectObj.percentage = Number(
+    ((obtainedMarks / subjectObj.maxMarks) * 100).toFixed(2)
+  );
 
-//   const eachPercentage = ((obtainedMarks / subjectObj.maxMarks) * 100).toFixed(
-//     2
-//   );
-//   subjectObj.percentage = eachPercentage;
+  await marksheet.save();
 
-//   // total percentage logic
-//   const allSubjects = termObj.subjects;
-//   let totalObtainedNumbers = [];
-//   let totalMarks = [];
-//   allSubjects.forEach((e) => {
-//     totalObtainedNumbers.push(e.obtainedMarks);
-//   });
-//   allSubjects.forEach((e) => {
-//     totalMarks.push(e.maxMarks);
-//   });
-
-//   let totalObtained = 0;
-//   for (let i = 0; i < totalObtainedNumbers.length; i++) {
-//     totalObtained = totalObtained + totalObtainedNumbers[i];
-//   }
-//   let total = 0;
-//   for (let i = 0; i < totalMarks.length; i++) {
-//     total += totalMarks[i];
-//   }
-
-//   const totalPercentage = ((totalObtained / total) * 100).toFixed(2);
-
-//   termObj.percentage = totalPercentage;
-
-//   await marksheet.save();
-
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, {}, "Marks updated successfully"));
-// });
-
+  return res.status(200).json(
+    new ApiResponse(200, marksheet, "Marks updated successfully")
+  );
+});
 
 
 // const fetchAssignedStudents = asyncHandler(async (req, res) => {
@@ -218,8 +199,7 @@ const logOutTeacher = asyncHandler(async (req, res) => {
 //     throw new ApiError(400, "Unauthorized access");
 //   }
 
-//   const classesAssigned = teacher.classAssigned; 
-
+//   const classesAssigned = teacher.classAssigned;
 
 //   const students = await Student.find({
 //     currentClass: { $in: classesAssigned }
@@ -270,8 +250,10 @@ const logOutTeacher = asyncHandler(async (req, res) => {
 //   );
 // });
 
-export { registerTeacher, loginTeacher, logOutTeacher, 
-    // assignMarksToStudent,fetchAssignedStudents 
-    
+export {
+  registerTeacher,
+  loginTeacher,
+  logOutTeacher,
+  assignMarksToStudent,
+  // fetchAssignedStudents
 };
-
