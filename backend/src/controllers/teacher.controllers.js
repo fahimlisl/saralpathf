@@ -168,7 +168,6 @@ const assignMarksToStudent = asyncHandler(async (req, res) => {
   const subjectObj = termObj.subjects.find(
     s => String(s._id) === String(subjectId)
   );
-
   if (!subjectObj) {
     throw new ApiError(404, "Subject not found");
   }
@@ -182,7 +181,6 @@ const assignMarksToStudent = asyncHandler(async (req, res) => {
   subjectObj.percentage = Number(
     ((obtainedMarks / subjectObj.maxMarks) * 100).toFixed(2)
   );
-
   await marksheet.save();
 
   return res.status(200).json(

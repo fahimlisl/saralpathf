@@ -284,7 +284,14 @@ const registerStudent = asyncHandler(async (req, res) => {
   }
 
   const respectiveSub = subjects[classDefined];
-  console.log(respectiveSub);
+
+
+  let maximumMarksFirstAndSecond = 0;
+  if(classDefined === 3 || 4 || 5){
+    maximumMarksFirstAndSecond = 40;
+  } else if(classDefined === 6 || 7 || 8 || 9 || 71 || 81 || 22 || 91 ){
+    maximumMarksFirstAndSecond = 50;
+  }
 
   const assignedSubjects = await Promise.all(
     respectiveSub.map(async (sub) => {
@@ -296,7 +303,7 @@ const registerStudent = asyncHandler(async (req, res) => {
 
       return {
         subjectName: sub,
-        maxMarks: 100,
+        maxMarks: maximumMarksFirstAndSecond,
         obtainedMarks: 0,
         teacher: teacher ? teacher._id : null,
         isSubmitted: false,
@@ -304,7 +311,7 @@ const registerStudent = asyncHandler(async (req, res) => {
     })
   );
 
-  const termsArray = [1, 2, 3].map((term) => ({
+  const termsArray = [1, 2].map((term) => ({
     term,
     subjects: assignedSubjects.map((s) => ({
       ...s,
@@ -313,10 +320,38 @@ const registerStudent = asyncHandler(async (req, res) => {
     })),
   }));
 
+  let maximumThirdMarks = 0;
+  if(classDefined === 3 || 4 || 5){
+    maximumThirdMarks = 50;
+  } else if(classDefined === 6 || 7 || 8 || 9 || 71 || 81 || 22 || 91 ){
+    maximumThirdMarks = 100;
+  }
+
+  const thirdTerm = [3].map((term) => ({
+    term,
+    subjects: assignedSubjects.map((s) => ({
+      ...s,
+      maxMarks:maximumThirdMarks,
+      obtainedMarks: 0,
+      isSubmitted: false,
+    }))
+  }))
+
   const wholeMarksheet = await Marksheet.create({
     student: studnet._id,
     terms: termsArray,
   });
+
+  await Marksheet.findByIdAndUpdate(wholeMarksheet._id,
+    {
+      $push:{
+        terms:thirdTerm
+      }
+    },
+    {
+      new:true
+    }
+  )
 
   await Student.findByIdAndUpdate(studnet._id, {
     $set: {
