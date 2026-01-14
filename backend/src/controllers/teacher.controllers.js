@@ -189,69 +189,66 @@ const assignMarksToStudent = asyncHandler(async (req, res) => {
 });
 
 
-// const fetchAssignedStudents = asyncHandler(async (req, res) => {
-//   const teacherId = req.user._id;
+const fetchAssignedStudents = asyncHandler(async (req, res) => {
+  const teacherId = req.user._id;
 
-//   const teacher = await Teacher.findById(teacherId);
-//   if (!teacher) {
-//     throw new ApiError(400, "Unauthorized access");
-//   }
+  const teacher = await Teacher.findById(teacherId);
+  if (!teacher) {
+    throw new ApiError(401, "Unauthorized access");
+  }
 
-//   const classesAssigned = teacher.classAssigned;
+  // find students whose marksheet contains at least one subject of this teacher
+  const students = await Student.find()
+    .populate({
+      path: "marksheet",
+      match: {
+        "terms.subjects.teacher": teacherId
+      }
+    })
+    .select("fullName section marksheet");
 
-//   const students = await Student.find({
-//     currentClass: { $in: classesAssigned }
-//   })
-//     .select("fullName currentClass section profilePhoto marksheet")
-//     .populate({
-//       path: "marksheet",
-//       populate: {
-//         path: "terms.subjects.teacher",
-//         select: "fullName subject"
-//       }
-//     });
+  // remove students whose marksheet didn't match
+  const filteredStudents = students.filter(s => s.marksheet);
 
-//   if (!students || students.length === 0) {
-//     return res.status(200).json(
-//       new ApiResponse(200, [], "No assigned students found")
-//     );
-//   }
+  // format resuls
+  const result = filteredStudents.map(student => {
+    const ms = student.marksheet;
+    const filteredTerms = ms.terms
+      .map(term => {
+        const teacherSubjects = term.subjects.filter(
+          sub => String(sub.teacher) === String(teacherId)
+        );
 
-//   const result = students.map(student => {
-//     const ms = student.marksheet;
+        if (teacherSubjects.length === 0) return null;
 
-//     if (!ms || !ms.terms) {
-//       return {
-//         ...student.toObject(),
-//         marksheet: null
-//       };
-//     }
+        return {
+          term: term.term,
+          subjects: teacherSubjects
+        };
+      })
+      .filter(Boolean); // remove null terms
 
-//     const filteredTerms = ms.terms.map(term => ({
-//       term: term.term,
-//       subjects: term.subjects.filter(
-//         sub => String(sub.teacher?._id) === String(teacherId)
-//       )
-//     }));
+    return {
+      _id: student._id,
+      fullName: student.fullName,
+      section: student.section,
+      marksheet: {
+        _id: ms._id,
+        terms: filteredTerms
+      }
+    };
+  });
 
-//     return {
-//       ...student.toObject(),
-//       marksheet: {
-//         _id: ms._id,
-//         terms: filteredTerms,
-//       }
-//     };
-//   });
+  return res.status(200).json(
+    new ApiResponse(200, result, "Assigned students fetched successfully")
+  );
+});
 
-//   return res.status(200).json(
-//     new ApiResponse(200, result, "Assigned students fetched successfully")
-//   );
-// });
 
 export {
   registerTeacher,
   loginTeacher,
   logOutTeacher,
   assignMarksToStudent,
-  // fetchAssignedStudents
+  fetchAssignedStudents
 };
