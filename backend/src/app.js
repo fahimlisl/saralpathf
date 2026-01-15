@@ -16,9 +16,11 @@ app.use(express.static("public"));
 import adminRouter from "./routes/admin.routes.js"
 import generalRouter from "./routes/general.routes.js"
 import teacherRouter from "./routes/teacher.routes.js"
+import studnetRouter from "./routes/student.routes.js"
 
 app.use("/api/v1/admin",adminRouter)
 app.use("/api/v1/general",generalRouter)
 app.use("/api/v1/teacher",teacherRouter)
+app.use("/api/v1/student",studnetRouter)
 
 export {app}
