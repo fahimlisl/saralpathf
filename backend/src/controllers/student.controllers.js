@@ -368,26 +368,284 @@ const registerStudent = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, finalStudnet, "student created successfully"));
 });
 
-const collectFee = asyncHandler(async (req, res) => {
-  const studnetId = req.params.id;
-  const { input } = req.body;
-  const updateField = `fees.${input}.isPaid`;
-  const student = await Student.findByIdAndUpdate(
-    studnetId,
-    {
-      $set: {
-        [updateField]: true,
-      },
-    },
-    {
-      new: true,
-    }
-  );
+// will remove this while putting to produciton
+// const collectFee = asyncHandler(async (req, res) => {
+//   const studnetId = req.params.id;
+//   const { input } = req.body;
+//   const updateField = `fees.${input}.isPaid`;
+//   const student = await Student.findByIdAndUpdate(
+//     studnetId,
+//     {
+//       $set: {
+//         [updateField]: true,
+//       },
+//     },
+//     {
+//       new: true,
+//     }
+//   );
 
-  if (!student) throw new ApiError(400, "unable to collect fee");
-  return res
-    .status(200)
-    .json(new ApiResponse(200, student, `updated ${input} fees successfully`));
+//   if (!student) throw new ApiError(400, "unable to collect fee");
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, student, `updated ${input} fees successfully`));
+// });
+
+import InvoicePDFService from '../utils/invoicePDF.utils.js';
+
+
+const invoiceService = new InvoicePDFService();
+// scond attempt for better collectFee controller
+const collectFee = asyncHandler(async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    const { 
+      input, 
+      paymentMethod = "Cash", 
+      fineAmount = 0, 
+      discount = 0, 
+      remarks = "",
+      returnInvoice = true // Add this flag to control if invoice should be returned
+    } = req.body;
+    
+    if (!input) {
+      throw new ApiError(400, "Month/Type is required");
+    }
+
+    const student = await Student.findById(studentId);
+    if (!student) {
+      throw new ApiError(404, "Student not found");
+    }
+
+    if (!student.fees || !student.fees[input]) {
+      throw new ApiError(400, `Fee for ${input} not found`);
+    }
+
+    const feeAmount = student.fees[input].amount || 0;
+
+    const totalAmount = feeAmount - discount + parseInt(fineAmount);
+    const amountPaid = totalAmount; // assuming full payment
+
+    const updateField = `fees.${input}`;
+    const updatedStudent = await Student.findByIdAndUpdate(
+      studentId,
+      {
+        $set: {
+          [updateField]: {
+            amount: feeAmount,
+            isPaid: true,
+            paidDate: new Date(),
+            paymentMethod: paymentMethod,
+            discount: discount,
+            fine: parseInt(fineAmount),
+            amountPaid: amountPaid,
+            // balance: 0, // Assuming full payment
+            remarks: remarks
+          }
+        },
+        // will be used as history saved later if needed as per requirements
+        // $push: {
+        //   paymentHistory: {
+        //     month: input,
+        //     date: new Date(),
+        //     amount: feeAmount,
+        //     discount: discount,
+        //     fine: parseInt(fineAmount),
+        //     totalPaid: amountPaid,
+        //     paymentMethod: paymentMethod,
+        //     remarks: remarks
+        //   }
+        // }
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!updatedStudent) {
+      throw new ApiError(400, "Unable to collect fee");
+    }
+
+    const responseData = {
+      success: true,
+      message: `Fee for ${input} collected successfully`,
+      data: {
+        student: {
+          id: updatedStudent._id,
+          fullName: updatedStudent.fullName,
+          registerNo: updatedStudent.registerNo,
+          class: updatedStudent.typeOfClass
+        },
+        paymentDetails: {
+          month: input,
+          amount: feeAmount,
+          discount: discount,
+          fine: parseInt(fineAmount),
+          totalPaid: amountPaid,
+          // paymentMethod: paymentMethod,
+          balance: 0,
+          date: new Date().toISOString(),
+          remarks: remarks
+        }
+      }
+    };
+
+    // if invoice is requested, generate and attach it
+    if (returnInvoice) {
+      // generate invoice PDF
+      const invoiceResult = await invoiceService.generateInvoicePDF(
+        {
+          fullName: updatedStudent.fullName,
+          registerNo: updatedStudent.registerNo,
+          typeOfClass: updatedStudent.typeOfClass,
+          stream: updatedStudent.stream,
+          section: updatedStudent.section,
+          fatherName: updatedStudent.gurdianName,
+          address: updatedStudent.address,
+          phoneNumber: updatedStudent.phoneNumber
+        },
+        {
+          month: input,
+          feeAmount: feeAmount,
+          discount: discount,
+          fine: parseInt(fineAmount),
+          totalPaid: amountPaid,
+          paymentMethod: paymentMethod,
+          remarks: remarks
+        },
+        {
+          address: "Vill - kankuria, Po- Miapur, P.s - Raghunathganj, Dist- Murshidabad, Pin No - 742235",
+          whatsapp: "8514868658 , 7908573548",
+          email: "saralpath2013@gmail.com",
+          invoiceNumber: `INV${Date.now().toString().slice(-6)}`,
+          academicYear: "2025-2026"
+        }
+      );
+
+      // no need as of to convert buffer to json fomrat base64
+      responseData.data.invoice = {
+        // base64: invoiceResult.buffer.toString('base64'),
+        // fileName: invoiceResult.fileName,
+        mimeType: 'application/pdf',
+        msg:"fee collection successful"
+      };
+    }
+
+    return res.status(200).json(responseData);
+
+  } catch (error) {
+    console.error("Error collecting fee:", error);
+    throw new ApiError(500, error.message || "Internal server error");
+  }
 });
+
+
+const downloadInvoice = asyncHandler(async (req, res) => {
+  try {
+    const { studentId, month } = req.params;
+    
+    const student = await Student.findById(studentId);
+    if (!student) {
+      throw new ApiError(404, "Student not found");
+    }
+
+    if (!student.fees || !student.fees[month] || !student.fees[month].isPaid) {
+      throw new ApiError(400, `No paid fee record found for ${month}`);
+    }
+
+    const feeDetails = student.fees[month];
+    
+    const invoiceResult = await invoiceService.generateInvoicePDF(
+      {
+        fullName: student.fullName,
+        registerNo: student.registerNo,
+        typeOfClass: student.typeOfClass,
+        stream: student.stream,
+        section: student.section,
+        fatherName: student.gurdianName,
+        address: student.address,
+        phoneNumber: student.phoneNumber
+      },
+      {
+        month: month,
+        feeAmount: feeDetails.amount || 0,
+        discount: feeDetails.discount || 0,
+        fine: feeDetails.fine || 0,
+        totalPaid: feeDetails.amountPaid || 0,
+        paymentMethod: feeDetails.paymentMethod || "Cash",
+        remarks: feeDetails.remarks || ""
+      },
+      {
+        address: "Vill - kankuria, Po- Miapur, P.s - Raghunathganj, Dist- Murshidabad, Pin No - 742235",
+        whatsapp: "8514868658 , 7908573548",
+        email: "saralpath2013@gmail.com",
+        invoiceNumber: `INV${Date.now().toString().slice(-6)}`,
+        academicYear: "2025-2026"
+      }
+    );
+
+    // direct streaming to browser with file handling
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${invoiceResult.fileName}"`);
+    res.send(invoiceResult.buffer);
+
+  } catch (error) {
+    console.error("Error generating invoice:", error);
+    throw new ApiError(500, error.message || "Internal server error");
+  }
+});
+
+const previewInvoice = asyncHandler(async (req, res) => {
+  try {
+    const { studentId, month } = req.params;
+    const { feeAmount = 0, discount = 0, fine = 0, paymentMethod = "Cash" } = req.query;
+    
+    const student = await Student.findById(studentId);
+    if (!student) {
+      throw new ApiError(404, "Student not found");
+    }
+
+    const totalPaid = feeAmount - discount + parseInt(fine);
+    
+    const htmlContent = invoiceService.generateInvoiceHTML(
+      {
+        fullName: student.fullName,
+        registerNo: student.registerNo,
+        typeOfClass: student.typeOfClass,
+        stream: student.stream,
+        section: student.section,
+        fatherName: student.fatherName,
+        address: student.address,
+        phoneNumber: student.phoneNumber
+      },
+      {
+        month: month,
+        feeAmount: parseFloat(feeAmount),
+        discount: parseFloat(discount),
+        fine: parseInt(fine),
+        totalPaid: totalPaid,
+        paymentMethod: paymentMethod,
+        remarks: ""
+      },
+      {
+        address: "Vill - kankuria, Po- Miapur, P.s - Raghunathganj, Dist- Murshidabad, Pin No - 742235",
+        whatsapp: "8514868658 , 7908573548",
+        email: "saralpath2013@gmail.com",
+        invoiceNumber: `INV${Date.now().toString().slice(-6)}`,
+        academicYear: "2025-2026"
+      }
+    );
+
+    res.setHeader('Content-Type', 'text/html');
+    res.send(htmlContent);
+
+  } catch (error) {
+    console.error("Error previewing invoice:", error);
+    throw new ApiError(500, error.message || "Internal server error");
+  }
+});
+
+ export { downloadInvoice, previewInvoice };
 
 export { registerStudent, collectFee };
