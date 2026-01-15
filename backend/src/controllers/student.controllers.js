@@ -176,6 +176,73 @@ const subjects = {
     "Geography 22",
     "Arabic Lt + Insha 22",
   ],
+
+  // edadiah-I
+  11:[
+    "Hifzul Qur'an 11",
+    "Hadith 11",
+    "Nahu 11",
+    "Sarf 11",
+    "Sirat 11",
+    "Aqeedah 11",
+    "Durusul Lugah 11",
+    "Dua 11",
+    "Qasasun nabiyyen 11",
+    "Taisirul Arabiyyah+Insha 11",
+    "An Nahul Wazeh 11"
+  ],
+  
+  // edadiath-II
+  12:[
+    "Hifzul Qur'an 12",
+    "Tafseer 12",
+    "Hadith 12",
+    "Nahu 12",
+    "Sarf 12",
+    "Sirat 12",
+    "Aqeedah 12",
+    "Durusul Lugah 12",
+    "Islamic History 12",
+    "An Nahul Wazeh 12",
+    "Quran Tarjuma 12",
+    "Taisirul Arabiyyah+Insha 12",
+    "Mantiq 12",
+    "Balagah 12",
+    "Azharul Arab 12",
+    "Hadith + Usule Hadith 12",
+  ],
+
+  // edadiah-III
+  13:[
+    "Hifzul Qur'an 13",
+    "Tafseer 13",
+    "Hadith 13",
+    "Nahu 13",
+    "Sarf 13",
+    "Sirat 13",
+    "Aqeedah 13",
+    "Fiq 13",
+    "Fiq + U.Fiq 13",
+    "U.Tafseer 13",
+    "Faraiz 13",
+    "Islamic History 13",
+    "An Nahul Wazeh 13",
+    "Insha 13",
+    "Balagah 13",
+    "Hadith + Usule Hadith 13",
+  ],
+
+  // hifz -A - 15
+  15:[
+     "Hifzul Qur'an 15",
+     "Bengali 15",
+     "English 15",
+     "Mathematics 15",
+     "Arabic Literature 15",
+     "Tajweed 15",
+     "Urdu 15",
+  ]
+
 };
 
 const registerStudent = asyncHandler(async (req, res) => {
@@ -279,6 +346,14 @@ const registerStudent = asyncHandler(async (req, res) => {
     classDefined = parseInt(String(classCurrent) + 1);
   } else if (typeOfClass === "Rapid") {
     classDefined = 22;
+  } else if(typeOfClass === "Edadiah-I") {
+    classDefined = 11
+  } else if(typeOfClass === "Edadiah-II") {
+    classDefined = 12
+  } else if(typeOfClass === "Edadiah-III") {
+    classDefined = 13
+  } else if(typeOfClass === "Hifz-A") {
+    classDefined = 15
   } else {
     classDefined = classCurrent;
   }
@@ -287,11 +362,81 @@ const registerStudent = asyncHandler(async (req, res) => {
 
 
   let maximumMarksFirstAndSecond = 0;
-  if(classDefined === 3 || 4 || 5){
+  if(classDefined === 3 || classDefined === 4 || classDefined === 5 || classDefined === 11 || classDefined === 15){
     maximumMarksFirstAndSecond = 40;
-  } else if(classDefined === 6 || 7 || 8 || 9 || 71 || 81 || 22 || 91 ){
+  } else if(classDefined === 6 || classDefined === 7 || classDefined === 8 || classDefined === 9 || classDefined === 71 || classDefined === 81 || classDefined === 22 || classDefined === 91 ){
     maximumMarksFirstAndSecond = 50;
   }
+
+  if (classDefined === 13 || classDefined === 12) {
+
+  const assignedSubjects = await Promise.all(
+    respectiveSub.map(async (sub) => {
+      const teacher = await Teacher.findOne({
+        subject: { $in: [sub] },
+      });
+
+      let maximumMarksFirstAndSecond12 = 40;
+
+      if (sub === "Sirat 12" || sub === "Islamic History 12" || sub === "Sirat 13" || sub === "Islamic History 13") {
+        maximumMarksFirstAndSecond12 = 20;
+      }
+
+      return {
+        subjectName: sub,
+        maxMarks: maximumMarksFirstAndSecond12,
+        obtainedMarks: 0,
+        teacher: teacher ? teacher._id : null,
+        isSubmitted: false,
+      };
+    })
+  );
+
+  const termsArray = [1, 2].map((term) => ({
+    term,
+    subjects: assignedSubjects.map((s) => ({
+      ...s,
+      obtainedMarks: 0,
+      isSubmitted: false,
+    })),
+  }));
+
+  const thirdTerm = {
+  term: 3,
+  subjects: assignedSubjects.map((s) => {
+    let maximumThirdMarks = 50;
+
+    if (s.subjectName === "Sirat 12" || s.subjectName === "Islamic History 12" || s.subjectName === "Sirat 13" || s.subjectName === "Islamic History 13") {
+      maximumThirdMarks = 25;
+    }
+
+    return {
+      ...s,
+      maxMarks: maximumThirdMarks,
+      obtainedMarks: 0,
+      isSubmitted: false,
+    };
+  }),
+};
+
+  const wholeMarksheet = await Marksheet.create({
+    student: studnet._id,
+    terms: [...termsArray, thirdTerm],
+  });
+
+  await Student.findByIdAndUpdate(studnet._id, {
+    $set: {
+      marksheet: wholeMarksheet._id,
+    },
+  });
+
+  const finalStudnet = await Student.findById(studnet._id).populate("marksheet");
+
+  return res.status(200).json(
+    new ApiResponse(200, finalStudnet, "student created successfully")
+  );
+}
+
 
   const assignedSubjects = await Promise.all(
     respectiveSub.map(async (sub) => {
@@ -321,37 +466,28 @@ const registerStudent = asyncHandler(async (req, res) => {
   }));
 
   let maximumThirdMarks = 0;
-  if(classDefined === 3 || 4 || 5){
+  if(classDefined === 3 || classDefined === 4 || classDefined === 5 || classDefined === 11 || classDefined === 15){
     maximumThirdMarks = 50;
-  } else if(classDefined === 6 || 7 || 8 || 9 || 71 || 81 || 22 || 91 ){
+  } else if(classDefined === 6 || classDefined === 7 || classDefined === 8 || classDefined === 9 || classDefined === 71 || classDefined === 81 || classDefined === 22 || classDefined === 91 ){
     maximumThirdMarks = 100;
   }
 
-  const thirdTerm = [3].map((term) => ({
-    term,
-    subjects: assignedSubjects.map((s) => ({
+  const thirdTerm = {
+    term:3,
+     subjects: assignedSubjects.map((s) => {
+    return {
       ...s,
-      maxMarks:maximumThirdMarks,
+      maxMarks: maximumThirdMarks,
       obtainedMarks: 0,
       isSubmitted: false,
-    }))
-  }))
+    };
+  }),
+  }
 
   const wholeMarksheet = await Marksheet.create({
     student: studnet._id,
-    terms: termsArray,
+    terms: [...termsArray,thirdTerm],
   });
-
-  await Marksheet.findByIdAndUpdate(wholeMarksheet._id,
-    {
-      $push:{
-        terms:thirdTerm
-      }
-    },
-    {
-      new:true
-    }
-  )
 
   await Student.findByIdAndUpdate(studnet._id, {
     $set: {
@@ -367,6 +503,8 @@ const registerStudent = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, finalStudnet, "student created successfully"));
 });
+
+
 
 // will remove this while putting to produciton
 // const collectFee = asyncHandler(async (req, res) => {

@@ -189,7 +189,64 @@ const teacherSchema = new mongoose.Schema(
           "Geography 22",
           "Arabic Lt + Insha 22",
 
-          // till now keeping till 6 for testing purpose
+          // edadiah - 11 (code)
+          "Hifzul Qur'an 11",
+          "Hadith 11",
+          "Nahu 11",
+          "Sarf 11",
+          "Sirat 11",
+          "Aqeedah 11",
+          "Durusul Lugah 11",
+          "Dua 11",
+          "Qasasun nabiyyen 11",
+          "Taisirul Arabiyyah+Insha 11",
+          "An Nahul Wazeh 11",
+
+          // edadiah-II 12(code)
+          "Hifzul Qur'an 12",
+          "Tafseer 12",
+          "Hadith 12",
+          "Nahu 12",
+          "Sarf 12",
+          "Sirat 12",
+          "Aqeedah 12",
+          "Durusul Lugah 12",
+          "Islamic History 12",
+          "An Nahul Wazeh 12",
+          "Quran Tarjuma 12",
+          "Taisirul Arabiyyah+Insha 12",
+          "Mantiq 12",
+          "Balagah 12",
+          "Azharul Arab 12",
+          "Hadith + Usule Hadith 12",
+
+          // edadiah-III (code)
+          "Hifzul Qur'an 13",
+          "Tafseer 13",
+          "Hadith 13",
+          "Nahu 13",
+          "Sarf 13",
+          "Sirat 13",
+          "Aqeedah 13",
+          "Fiq 13",
+          "Fiq + U.Fiq 13",
+          "U.Tafseer 13",
+          "Faraiz 13",
+          "Islamic History 13",
+          "An Nahul Wazeh 13",
+          "Insha 13",
+          "Balagah 13",
+          "Hadith + Usule Hadith 13",
+
+          // hifz-A 15 (code)
+          "Hifzul Qur'an 15",
+          "Bengali 15",
+          "English 15",
+          "Mathematics 15",
+          "Arabic Literature 15",
+          "Tajweed 15",
+          "Urdu 15",
+
         ],
       },
     ],
@@ -199,13 +256,7 @@ const teacherSchema = new mongoose.Schema(
     },
     refreshToken: {
       type: String,
-    },
-    // classAssigned:[
-    //   {
-    //     type:Number,
-    //     required:true
-    //   }
-    // ],
+    }
   },
   { timestamps: true }
 );
