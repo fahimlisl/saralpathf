@@ -4,8 +4,14 @@ import {
     previewMarksheet, 
     generateMultipleMarksheets 
 } from '../controllers/marksheet.controllers.js';
+import { loginStudent, logOutStudent } from "../controllers/student.controllers.js";
+import {verifyJWT} from "../middlewares/auth.middlewares.js"
 
 const router = Router();
+
+
+router.route("/login").post(loginStudent)
+router.route("/logout").post(verifyJWT,logOutStudent)
 
 
 // Marksheet routes

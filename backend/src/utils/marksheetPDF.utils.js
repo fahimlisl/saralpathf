@@ -234,7 +234,7 @@ class MarksheetPDFService {
                 .academic-session {
                     text-align: center;
                     font-weight: bold;
-                    margin-bottom: 10px;
+                    margin-bottom: 5px;
                 }
                 
                 .student-info-table {
@@ -260,7 +260,7 @@ class MarksheetPDFService {
                 .marks-table {
                     width: 100%;
                     border-collapse: collapse;
-                    margin: 20px 0;
+                    margin: 10px 0;
                     font-size: 9px;
                     background: white;
                 }
@@ -302,7 +302,7 @@ class MarksheetPDFService {
                 
                 .summary-row {
                     display: flex;
-                    margin: 3px 0;
+                    margin: 1.5px 0;
                 }
                 
                 .summary-label {
@@ -314,7 +314,7 @@ class MarksheetPDFService {
                 .grading-scale {
                     width: 100%;
                     border-collapse: collapse;
-                    margin: 8px 0;
+                    margin: 4px 0;
                     font-size: 8px;
                 }
                 
@@ -331,7 +331,7 @@ class MarksheetPDFService {
                 }
                 
                 .total-in-words {
-                    margin: 8px 0;
+                    margin: 4px 0;
                 padding: 6px;
                 border-top: 1px dashed #2c3e50;
                 border-bottom: 1px dashed #2c3e50;
@@ -341,7 +341,7 @@ class MarksheetPDFService {
                 }
                 
                 .signature-section {
-                    margin-top: 40px;
+                    margin-top: 30px;
                     display: flex;
                     justify-content: space-between;
                     padding: 0 30px;

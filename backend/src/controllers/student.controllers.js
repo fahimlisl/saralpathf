@@ -4,6 +4,8 @@ import { Teacher } from "../models/teacher.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/AsyncHandler.js";
+import {generateAccessAndRefreshToken} from "../utils/generateAccessAndRefreshToken.js"
+import {options} from "../utils/options.js"
 
 const subjects = {
   3: [
@@ -504,31 +506,6 @@ const registerStudent = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, finalStudnet, "student created successfully"));
 });
 
-
-
-// will remove this while putting to produciton
-// const collectFee = asyncHandler(async (req, res) => {
-//   const studnetId = req.params.id;
-//   const { input } = req.body;
-//   const updateField = `fees.${input}.isPaid`;
-//   const student = await Student.findByIdAndUpdate(
-//     studnetId,
-//     {
-//       $set: {
-//         [updateField]: true,
-//       },
-//     },
-//     {
-//       new: true,
-//     }
-//   );
-
-//   if (!student) throw new ApiError(400, "unable to collect fee");
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, student, `updated ${input} fees successfully`));
-// });
-
 import InvoicePDFService from '../utils/invoicePDF.utils.js';
 
 
@@ -581,19 +558,6 @@ const collectFee = asyncHandler(async (req, res) => {
             remarks: remarks
           }
         },
-        // will be used as history saved later if needed as per requirements
-        // $push: {
-        //   paymentHistory: {
-        //     month: input,
-        //     date: new Date(),
-        //     amount: feeAmount,
-        //     discount: discount,
-        //     fine: parseInt(fineAmount),
-        //     totalPaid: amountPaid,
-        //     paymentMethod: paymentMethod,
-        //     remarks: remarks
-        //   }
-        // }
       },
       {
         new: true,
@@ -784,6 +748,148 @@ const previewInvoice = asyncHandler(async (req, res) => {
   }
 });
 
+
+const loginStudent = asyncHandler(async (req, res) => {
+  const { phoneNumber, email, password } = req.body;
+
+  if (!phoneNumber && !email) {
+    throw new ApiError(401, "any of phonenumbner or emails required");
+  }
+
+  if (!password) {
+    throw new ApiError(400, "password is required");
+  }
+
+  const foundStudnet = await Student.findOne({
+    $or: [{ email }, { phoneNumber }],
+  });
+
+  if (!foundStudnet) {
+    throw new ApiError(400, "user does't exist");
+  }
+
+  const checkPassword = await foundStudnet.isPasswordCorrect(password);
+
+  if (!checkPassword) {
+    throw new ApiError(400, "please enter correct password");
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    foundStudnet._id,Student
+  );
+
+  const loggedInStudent = await Student.findById(foundStudnet._id).select(
+    "-password -refreshToken"
+  );
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          // foundStudnet: loggedInStudent,
+          loginUser: loggedInStudent,
+          accessToken,
+          refreshToken,
+        },
+        "user logged in successfully"
+      )
+    );
+});
+
+const logOutStudent = asyncHandler(async (req, res) => {
+  const user = await Student.findByIdAndUpdate(
+    req.user._id,
+    {
+      $unset: {
+        refreshToken: "",
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  return res
+    .status(200)
+    .clearCookie("refreshToken", options)
+    .clearCookie("accessToken", options)
+    .json(new ApiResponse(200, {}, "student logged out successfully"));
+});
+
+const fetchAllStudents = asyncHandler(async (req,res) => {
+  const students = await Student.find({}).select("-password -refreshToken -fees");
+  if(!students) throw new ApiError(400,"no studnets registerd yet");
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(
+      200,
+      students,
+      "studnets been successfully fetched"
+    )
+  )
+});
+
+const countStudent = asyncHandler(async(req,res) => {
+  const count = await Student.countDocuments();
+  if(count === undefined) throw new ApiError(500,"internal server error , count got value of undefined");
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(
+      200,
+      count,
+      "no of students fetched successfully!"
+    )
+  )
+})
+
+const fetchParticularStudent = asyncHandler(async (req,res) => {
+  const studentId = req.params.id;
+  const student = await Student.findById(studentId).populate("marksheet").select("-password -refreshToken");
+  if(!student) throw new ApiError(400,"no studnet found regarding this student Id")
+  return res
+  .status(200)
+  .json(new ApiResponse(
+    200,
+    student,
+    "successfully fetched the partuclar student"
+  ))
+});
+
+// will write later
+// const collectionFeeThin
+// will collect the no of fees that are not paid , by the studnts 
+
+const getStudentProfile = asyncHandler(async (req, res) => {
+  // req.params._id // returns undefiend
+  const studentId = req.params.id;
+  console.log(`this is req.params.id ${req.params.id}`);
+
+  // req.params.id // returns the proper thing ,
+
+  // 'req.params' doesn't specifilcly returns anything , gotta dive more deep into it
+
+  const wantedStudent = await Student.findById(studentId).populate(
+    "feeStructure"
+  ).populate("marksheet");
+
+  if (!wantedStudent) {
+    throw new ApiError(400, "studnet wasn't found!");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, wantedStudent, "student data fetched successfully")
+    );
+});
+
  export { downloadInvoice, previewInvoice };
 
-export { registerStudent, collectFee };
+export { registerStudent, collectFee ,loginStudent,logOutStudent , fetchAllStudents , fetchParticularStudent ,countStudent};

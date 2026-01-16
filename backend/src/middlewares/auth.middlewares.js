@@ -5,7 +5,7 @@ import { Student } from "../models/student.models.js"
 import { Teacher } from "../models/teacher.models.js"
 
 const roleMap = {
-    studnet: Student,
+    student: Student,
     admin: Admin,
     teacher: Teacher
 }

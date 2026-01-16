@@ -244,11 +244,101 @@ const fetchAssignedStudents = asyncHandler(async (req, res) => {
   );
 });
 
+const countTeacher = asyncHandler(async(req,res) =>{
+  const count = await Teacher.countDocuments();
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(
+      200,
+      count,
+      "no of teachers counted successfully"
+    )
+  )
+});
+
+const fetchAllTeacher = asyncHandler(async(req,res) =>{
+  const teachers = await Teacher.find({}).select("-refreshToken")
+  if(teachers === 0){
+    return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        "till now no teahcers are added yet"
+      )
+    )
+  }
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(
+      200,
+      teachers,
+      "teahcers fetched successfully"
+    )
+  )
+})
+// as of now leeting edit teacher later will change things
+const editTeacher = asyncHandler(async(req,res) => {
+  const {fullName,
+    email,
+    phoneNumber,
+    subject,
+    password,} = req.body;
+    const teacherId = req.params.id;
+  const teacher = await Teacher.findById(teacherId);
+  const updateTeacher = await Teacher.findByIdAndUpdate(teacher._id,
+    {
+      $set:{
+        email:email || teacher.email,
+        phoneNumber:phoneNumber || teacher.phoneNumber,
+        subject:subject || teacher.subject,
+        password:password || teacher.password
+      }
+    },
+    {
+      new:true
+    }
+  )
+  
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(
+      200,
+      updateTeacher,
+      "teacher been updated successfully"
+    )
+  )
+})
+
+const fetchParticularTeacher = asyncHandler(async(req,res) => {
+  const teacherId = req.params.id;
+  const teacher = await Teacher.findById(teacherId).select(-refreshToken)
+  if(!teacher) throw new ApiError(400,"teahcer related to this id wasn't able to found")
+  return res
+.status(200)
+.json(
+  new ApiResponse(
+    200,
+    teacher,
+    "successfully fetched teaher"
+  )
+)
+})
+
 
 export {
   registerTeacher,
   loginTeacher,
   logOutTeacher,
   assignMarksToStudent,
-  fetchAssignedStudents
+  fetchAssignedStudents,
+  countTeacher,
+  fetchAllTeacher,
+  editTeacher,
+  fetchParticularTeacher
 };
