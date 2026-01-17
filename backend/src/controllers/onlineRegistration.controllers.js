@@ -79,56 +79,130 @@ const register = asyncHandler(async (req, res) => {
 // fee payment thing left here
 
 // initialising pdf generation
+// const pdfService = new AdmitCardPDFService();
+
+// // generate single admit card - STREAM TO BROWSER
+// const generateAdmitCard = async (req, res) => {
+//     try {
+//         const { studentId } = req.params;
+//         const {application_Id} = req.body;
+//         // const student = await OnlineRegistration.findById(studentId);
+//         const student = await OnlineRegistration.findOne({
+//           application_Id
+//         })
+        
+//         if (!student) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: 'Student not found'
+//             });
+//         }
+        
+//         const schoolLogoPath = `https://res.cloudinary.com/dkrwq4wvi/image/upload/v1768457598/saralpath_logo.png`;
+//         const studentPhotoPath = student.photo || '';
+        
+//         const studentData = {
+//             studentName: student.fullName,
+//             applicationId: student.application_Id,
+//             dob: student.birthDate,
+//             class: student.typeOfClass,
+//             typeOfClass: student.typeOfClass,
+//             guardianName: student.guardianName,
+//             mobile: student.phoneNumber,
+//             email: student.email,
+//             address: student.address,
+//             photoPath: studentPhotoPath
+//         };
+        
+//         // generate PDF buffer 
+//         const result = await pdfService.generateAdmitCard(studentData, schoolLogoPath);
+        
+//         // set headers for PDF
+//         res.setHeader('Content-Type', 'application/pdf');
+//         res.setHeader('Content-Disposition', `inline; filename="${result.fileName}"`);
+        
+//         // stream the PDF buffer directly to browser
+//         res.send(result.buffer);
+        
+//     } catch (error) {
+//         console.error('Error generating admit card:', error);
+//         res.status(500).json({
+//             success: false,
+//             message: 'Error generating admit card',
+//             error: error.message
+//         });
+//     }
+// };
+
+
+
+
+
+
 const pdfService = new AdmitCardPDFService();
 
-// generate single admit card - STREAM TO BROWSER
 const generateAdmitCard = async (req, res) => {
-    try {
-        const { studentId } = req.params;
-        const student = await OnlineRegistration.findById(studentId);
-        
-        if (!student) {
-            return res.status(404).json({
-                success: false,
-                message: 'Student not found'
-            });
-        }
-        
-        const schoolLogoPath = `https://res.cloudinary.com/dkrwq4wvi/image/upload/v1768457598/saralpath_logo.png`;
-        const studentPhotoPath = student.photo || '';
-        
-        const studentData = {
-            studentName: student.fullName,
-            applicationId: student.application_Id,
-            dob: student.birthDate,
-            class: student.typeOfClass,
-            typeOfClass: student.typeOfClass,
-            guardianName: student.guardianName,
-            mobile: student.phoneNumber,
-            email: student.email,
-            address: student.address,
-            photoPath: studentPhotoPath
-        };
-        
-        // generate PDF buffer 
-        const result = await pdfService.generateAdmitCard(studentData, schoolLogoPath);
-        
-        // set headers for PDF
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${result.fileName}"`);
-        
-        // stream the PDF buffer directly to browser
-        res.send(result.buffer);
-        
-    } catch (error) {
-        console.error('Error generating admit card:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error generating admit card',
-            error: error.message
-        });
+  try {
+    const { application_Id } = req.body;
+
+    if (!application_Id) {
+      return res.status(400).json({
+        success: false,
+        message: "Application number is required"
+      });
     }
+
+    const student = await OnlineRegistration.findOne({ application_Id });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "No student found with this application number"
+      });
+    }
+
+    const schoolLogoPath =
+      "https://res.cloudinary.com/dkrwq4wvi/image/upload/v1768457598/saralpath_logo.png";
+
+    const studentData = {
+      studentName: student.fullName,
+      applicationId: student.application_Id,
+      dob: student.birthDate,
+      class: student.desiredClass || student.typeOfClass,
+      typeOfClass: student.typeOfClass,
+      guardianName: student.guardianName,
+      mobile: student.phoneNumber,
+      email: student.email,
+      address: student.address,
+      photoPath: student.photo || ""
+    };
+
+    const result = await pdfService.generateAdmitCard(studentData, schoolLogoPath);
+
+    // STREAM PDF TO BROWSER
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${result.fileName}"`
+    );
+
+    res.send(result.buffer);
+  } catch (error) {
+    console.error("Error generating admit card:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate admit card",
+      error: error.message
+    });
+  }
 };
+
+
+
+
+
+
+
 
 // generate multiple admit cards (for batch processing) - RETURNS ZIP
 const generateMultipleAdmitCards = async (req, res) => {

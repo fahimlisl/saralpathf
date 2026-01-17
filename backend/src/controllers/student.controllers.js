@@ -4,8 +4,8 @@ import { Teacher } from "../models/teacher.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/AsyncHandler.js";
-import {generateAccessAndRefreshToken} from "../utils/generateAccessAndRefreshToken.js"
-import {options} from "../utils/options.js"
+import { generateAccessAndRefreshToken } from "../utils/generateAccessAndRefreshToken.js";
+import { options } from "../utils/options.js";
 
 const subjects = {
   3: [
@@ -180,7 +180,7 @@ const subjects = {
   ],
 
   // edadiah-I
-  11:[
+  11: [
     "Hifzul Qur'an 11",
     "Hadith 11",
     "Nahu 11",
@@ -191,11 +191,11 @@ const subjects = {
     "Dua 11",
     "Qasasun nabiyyen 11",
     "Taisirul Arabiyyah+Insha 11",
-    "An Nahul Wazeh 11"
+    "An Nahul Wazeh 11",
   ],
-  
+
   // edadiath-II
-  12:[
+  12: [
     "Hifzul Qur'an 12",
     "Tafseer 12",
     "Hadith 12",
@@ -215,7 +215,7 @@ const subjects = {
   ],
 
   // edadiah-III
-  13:[
+  13: [
     "Hifzul Qur'an 13",
     "Tafseer 13",
     "Hadith 13",
@@ -235,16 +235,15 @@ const subjects = {
   ],
 
   // hifz -A - 15
-  15:[
-     "Hifzul Qur'an 15",
-     "Bengali 15",
-     "English 15",
-     "Mathematics 15",
-     "Arabic Literature 15",
-     "Tajweed 15",
-     "Urdu 15",
-  ]
-
+  15: [
+    "Hifzul Qur'an 15",
+    "Bengali 15",
+    "English 15",
+    "Mathematics 15",
+    "Arabic Literature 15",
+    "Tajweed 15",
+    "Urdu 15",
+  ],
 };
 
 const registerStudent = asyncHandler(async (req, res) => {
@@ -348,97 +347,121 @@ const registerStudent = asyncHandler(async (req, res) => {
     classDefined = parseInt(String(classCurrent) + 1);
   } else if (typeOfClass === "Rapid") {
     classDefined = 22;
-  } else if(typeOfClass === "Edadiah-I") {
-    classDefined = 11
-  } else if(typeOfClass === "Edadiah-II") {
-    classDefined = 12
-  } else if(typeOfClass === "Edadiah-III") {
-    classDefined = 13
-  } else if(typeOfClass === "Hifz-A") {
-    classDefined = 15
+  } else if (typeOfClass === "Edadiah-I") {
+    classDefined = 11;
+  } else if (typeOfClass === "Edadiah-II") {
+    classDefined = 12;
+  } else if (typeOfClass === "Edadiah-III") {
+    classDefined = 13;
+  } else if (typeOfClass === "Hifz-A") {
+    classDefined = 15;
   } else {
     classDefined = classCurrent;
   }
 
   const respectiveSub = subjects[classDefined];
 
-
   let maximumMarksFirstAndSecond = 0;
-  if(classDefined === 3 || classDefined === 4 || classDefined === 5 || classDefined === 11 || classDefined === 15){
+  if (
+    classDefined === 3 ||
+    classDefined === 4 ||
+    classDefined === 5 ||
+    classDefined === 11 ||
+    classDefined === 15
+  ) {
     maximumMarksFirstAndSecond = 40;
-  } else if(classDefined === 6 || classDefined === 7 || classDefined === 8 || classDefined === 9 || classDefined === 71 || classDefined === 81 || classDefined === 22 || classDefined === 91 ){
+  } else if (
+    classDefined === 6 ||
+    classDefined === 7 ||
+    classDefined === 8 ||
+    classDefined === 9 ||
+    classDefined === 71 ||
+    classDefined === 81 ||
+    classDefined === 22 ||
+    classDefined === 91
+  ) {
     maximumMarksFirstAndSecond = 50;
   }
 
   if (classDefined === 13 || classDefined === 12) {
+    const assignedSubjects = await Promise.all(
+      respectiveSub.map(async (sub) => {
+        const teacher = await Teacher.findOne({
+          subject: { $in: [sub] },
+        });
 
-  const assignedSubjects = await Promise.all(
-    respectiveSub.map(async (sub) => {
-      const teacher = await Teacher.findOne({
-        subject: { $in: [sub] },
-      });
+        let maximumMarksFirstAndSecond12 = 40;
 
-      let maximumMarksFirstAndSecond12 = 40;
+        if (
+          sub === "Sirat 12" ||
+          sub === "Islamic History 12" ||
+          sub === "Sirat 13" ||
+          sub === "Islamic History 13"
+        ) {
+          maximumMarksFirstAndSecond12 = 20;
+        }
 
-      if (sub === "Sirat 12" || sub === "Islamic History 12" || sub === "Sirat 13" || sub === "Islamic History 13") {
-        maximumMarksFirstAndSecond12 = 20;
-      }
+        return {
+          subjectName: sub,
+          maxMarks: maximumMarksFirstAndSecond12,
+          obtainedMarks: 0,
+          teacher: teacher ? teacher._id : null,
+          isSubmitted: false,
+        };
+      })
+    );
 
-      return {
-        subjectName: sub,
-        maxMarks: maximumMarksFirstAndSecond12,
+    const termsArray = [1, 2].map((term) => ({
+      term,
+      subjects: assignedSubjects.map((s) => ({
+        ...s,
         obtainedMarks: 0,
-        teacher: teacher ? teacher._id : null,
         isSubmitted: false,
-      };
-    })
-  );
+      })),
+    }));
 
-  const termsArray = [1, 2].map((term) => ({
-    term,
-    subjects: assignedSubjects.map((s) => ({
-      ...s,
-      obtainedMarks: 0,
-      isSubmitted: false,
-    })),
-  }));
+    const thirdTerm = {
+      term: 3,
+      subjects: assignedSubjects.map((s) => {
+        let maximumThirdMarks = 50;
 
-  const thirdTerm = {
-  term: 3,
-  subjects: assignedSubjects.map((s) => {
-    let maximumThirdMarks = 50;
+        if (
+          s.subjectName === "Sirat 12" ||
+          s.subjectName === "Islamic History 12" ||
+          s.subjectName === "Sirat 13" ||
+          s.subjectName === "Islamic History 13"
+        ) {
+          maximumThirdMarks = 25;
+        }
 
-    if (s.subjectName === "Sirat 12" || s.subjectName === "Islamic History 12" || s.subjectName === "Sirat 13" || s.subjectName === "Islamic History 13") {
-      maximumThirdMarks = 25;
-    }
-
-    return {
-      ...s,
-      maxMarks: maximumThirdMarks,
-      obtainedMarks: 0,
-      isSubmitted: false,
+        return {
+          ...s,
+          maxMarks: maximumThirdMarks,
+          obtainedMarks: 0,
+          isSubmitted: false,
+        };
+      }),
     };
-  }),
-};
 
-  const wholeMarksheet = await Marksheet.create({
-    student: studnet._id,
-    terms: [...termsArray, thirdTerm],
-  });
+    const wholeMarksheet = await Marksheet.create({
+      student: studnet._id,
+      terms: [...termsArray, thirdTerm],
+    });
 
-  await Student.findByIdAndUpdate(studnet._id, {
-    $set: {
-      marksheet: wholeMarksheet._id,
-    },
-  });
+    await Student.findByIdAndUpdate(studnet._id, {
+      $set: {
+        marksheet: wholeMarksheet._id,
+      },
+    });
 
-  const finalStudnet = await Student.findById(studnet._id).populate("marksheet");
+    const finalStudnet = await Student.findById(studnet._id).populate(
+      "marksheet"
+    );
 
-  return res.status(200).json(
-    new ApiResponse(200, finalStudnet, "student created successfully")
-  );
-}
-
+    return res
+      .status(200)
+      .json(new ApiResponse(200, finalStudnet, "student created successfully"));
+  }
 
   const assignedSubjects = await Promise.all(
     respectiveSub.map(async (sub) => {
@@ -468,27 +491,42 @@ const registerStudent = asyncHandler(async (req, res) => {
   }));
 
   let maximumThirdMarks = 0;
-  if(classDefined === 3 || classDefined === 4 || classDefined === 5 || classDefined === 11 || classDefined === 15){
+  if (
+    classDefined === 3 ||
+    classDefined === 4 ||
+    classDefined === 5 ||
+    classDefined === 11 ||
+    classDefined === 15
+  ) {
     maximumThirdMarks = 50;
-  } else if(classDefined === 6 || classDefined === 7 || classDefined === 8 || classDefined === 9 || classDefined === 71 || classDefined === 81 || classDefined === 22 || classDefined === 91 ){
+  } else if (
+    classDefined === 6 ||
+    classDefined === 7 ||
+    classDefined === 8 ||
+    classDefined === 9 ||
+    classDefined === 71 ||
+    classDefined === 81 ||
+    classDefined === 22 ||
+    classDefined === 91
+  ) {
     maximumThirdMarks = 100;
   }
 
   const thirdTerm = {
-    term:3,
-     subjects: assignedSubjects.map((s) => {
-    return {
-      ...s,
-      maxMarks: maximumThirdMarks,
-      obtainedMarks: 0,
-      isSubmitted: false,
-    };
-  }),
-  }
+    term: 3,
+    subjects: assignedSubjects.map((s) => {
+      return {
+        ...s,
+        maxMarks: maximumThirdMarks,
+        obtainedMarks: 0,
+        isSubmitted: false,
+      };
+    }),
+  };
 
   const wholeMarksheet = await Marksheet.create({
     student: studnet._id,
-    terms: [...termsArray,thirdTerm],
+    terms: [...termsArray, thirdTerm],
   });
 
   await Student.findByIdAndUpdate(studnet._id, {
@@ -506,23 +544,22 @@ const registerStudent = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, finalStudnet, "student created successfully"));
 });
 
-import InvoicePDFService from '../utils/invoicePDF.utils.js';
-
+import InvoicePDFService from "../utils/invoicePDF.utils.js";
 
 const invoiceService = new InvoicePDFService();
 // scond attempt for better collectFee controller
 const collectFee = asyncHandler(async (req, res) => {
   try {
     const studentId = req.params.id;
-    const { 
-      input, 
-      paymentMethod = "Cash", 
-      fineAmount = 0, 
-      discount = 0, 
+    const {
+      input,
+      paymentMethod = "Cash",
+      fineAmount = 0,
+      discount = 0,
       remarks = "",
-      returnInvoice = true // Add this flag to control if invoice should be returned
+      returnInvoice = true, // Add this flag to control if invoice should be returned
     } = req.body;
-    
+
     if (!input) {
       throw new ApiError(400, "Month/Type is required");
     }
@@ -555,13 +592,13 @@ const collectFee = asyncHandler(async (req, res) => {
             fine: parseInt(fineAmount),
             amountPaid: amountPaid,
             // balance: 0, // Assuming full payment
-            remarks: remarks
-          }
+            remarks: remarks,
+          },
         },
       },
       {
         new: true,
-        runValidators: true
+        runValidators: true,
       }
     );
 
@@ -577,7 +614,7 @@ const collectFee = asyncHandler(async (req, res) => {
           id: updatedStudent._id,
           fullName: updatedStudent.fullName,
           registerNo: updatedStudent.registerNo,
-          class: updatedStudent.typeOfClass
+          class: updatedStudent.typeOfClass,
         },
         paymentDetails: {
           month: input,
@@ -588,9 +625,9 @@ const collectFee = asyncHandler(async (req, res) => {
           // paymentMethod: paymentMethod,
           balance: 0,
           date: new Date().toISOString(),
-          remarks: remarks
-        }
-      }
+          remarks: remarks,
+        },
+      },
     };
 
     // if invoice is requested, generate and attach it
@@ -605,7 +642,7 @@ const collectFee = asyncHandler(async (req, res) => {
           section: updatedStudent.section,
           fatherName: updatedStudent.gurdianName,
           address: updatedStudent.address,
-          phoneNumber: updatedStudent.phoneNumber
+          phoneNumber: updatedStudent.phoneNumber,
         },
         {
           month: input,
@@ -614,14 +651,15 @@ const collectFee = asyncHandler(async (req, res) => {
           fine: parseInt(fineAmount),
           totalPaid: amountPaid,
           paymentMethod: paymentMethod,
-          remarks: remarks
+          remarks: remarks,
         },
         {
-          address: "Vill - kankuria, Po- Miapur, P.s - Raghunathganj, Dist- Murshidabad, Pin No - 742235",
+          address:
+            "Vill - kankuria, Po- Miapur, P.s - Raghunathganj, Dist- Murshidabad, Pin No - 742235",
           whatsapp: "8514868658 , 7908573548",
           email: "saralpath2013@gmail.com",
           invoiceNumber: `INV${Date.now().toString().slice(-6)}`,
-          academicYear: "2025-2026"
+          academicYear: "2025-2026",
         }
       );
 
@@ -629,24 +667,22 @@ const collectFee = asyncHandler(async (req, res) => {
       responseData.data.invoice = {
         // base64: invoiceResult.buffer.toString('base64'),
         // fileName: invoiceResult.fileName,
-        mimeType: 'application/pdf',
-        msg:"fee collection successful"
+        mimeType: "application/pdf",
+        msg: "fee collection successful",
       };
     }
 
     return res.status(200).json(responseData);
-
   } catch (error) {
     console.error("Error collecting fee:", error);
     throw new ApiError(500, error.message || "Internal server error");
   }
 });
 
-
-const downloadInvoice = asyncHandler(async (req, res) => {
+const previewInvoice = asyncHandler(async (req, res) => {
   try {
     const { studentId, month } = req.params;
-    
+
     const student = await Student.findById(studentId);
     if (!student) {
       throw new ApiError(404, "Student not found");
@@ -657,7 +693,7 @@ const downloadInvoice = asyncHandler(async (req, res) => {
     }
 
     const feeDetails = student.fees[month];
-    
+
     const invoiceResult = await invoiceService.generateInvoicePDF(
       {
         fullName: student.fullName,
@@ -665,9 +701,9 @@ const downloadInvoice = asyncHandler(async (req, res) => {
         typeOfClass: student.typeOfClass,
         stream: student.stream,
         section: student.section,
-        fatherName: student.gurdianName,
+        gurdianName: student.gurdianName,
         address: student.address,
-        phoneNumber: student.phoneNumber
+        phoneNumber: student.phoneNumber,
       },
       {
         month: month,
@@ -676,74 +712,25 @@ const downloadInvoice = asyncHandler(async (req, res) => {
         fine: feeDetails.fine || 0,
         totalPaid: feeDetails.amountPaid || 0,
         paymentMethod: feeDetails.paymentMethod || "Cash",
-        remarks: feeDetails.remarks || ""
+        remarks: feeDetails.remarks || "",
       },
       {
-        address: "Vill - kankuria, Po- Miapur, P.s - Raghunathganj, Dist- Murshidabad, Pin No - 742235",
+        address:
+          "Vill - kankuria, Po- Miapur, P.s - Raghunathganj, Dist- Murshidabad, Pin No - 742235",
         whatsapp: "8514868658 , 7908573548",
         email: "saralpath2013@gmail.com",
         invoiceNumber: `INV${Date.now().toString().slice(-6)}`,
-        academicYear: "2025-2026"
+        academicYear: "2025-2026",
       }
     );
 
-    // direct streaming to browser with file handling
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${invoiceResult.fileName}"`);
+    // ✅ Send PDF like marksheet
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline; filename=invoice.pdf");
     res.send(invoiceResult.buffer);
 
   } catch (error) {
     console.error("Error generating invoice:", error);
-    throw new ApiError(500, error.message || "Internal server error");
-  }
-});
-
-const previewInvoice = asyncHandler(async (req, res) => {
-  try {
-    const { studentId, month } = req.params;
-    const { feeAmount = 0, discount = 0, fine = 0, paymentMethod = "Cash" } = req.query;
-    
-    const student = await Student.findById(studentId);
-    if (!student) {
-      throw new ApiError(404, "Student not found");
-    }
-
-    const totalPaid = feeAmount - discount + parseInt(fine);
-    
-    const htmlContent = invoiceService.generateInvoiceHTML(
-      {
-        fullName: student.fullName,
-        registerNo: student.registerNo,
-        typeOfClass: student.typeOfClass,
-        stream: student.stream,
-        section: student.section,
-        fatherName: student.fatherName,
-        address: student.address,
-        phoneNumber: student.phoneNumber
-      },
-      {
-        month: month,
-        feeAmount: parseFloat(feeAmount),
-        discount: parseFloat(discount),
-        fine: parseInt(fine),
-        totalPaid: totalPaid,
-        paymentMethod: paymentMethod,
-        remarks: ""
-      },
-      {
-        address: "Vill - kankuria, Po- Miapur, P.s - Raghunathganj, Dist- Murshidabad, Pin No - 742235",
-        whatsapp: "8514868658 , 7908573548",
-        email: "saralpath2013@gmail.com",
-        invoiceNumber: `INV${Date.now().toString().slice(-6)}`,
-        academicYear: "2025-2026"
-      }
-    );
-
-    res.setHeader('Content-Type', 'text/html');
-    res.send(htmlContent);
-
-  } catch (error) {
-    console.error("Error previewing invoice:", error);
     throw new ApiError(500, error.message || "Internal server error");
   }
 });
@@ -775,7 +762,8 @@ const loginStudent = asyncHandler(async (req, res) => {
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-    foundStudnet._id,Student
+    foundStudnet._id,
+    Student
   );
 
   const loggedInStudent = await Student.findById(foundStudnet._id).select(
@@ -820,76 +808,106 @@ const logOutStudent = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "student logged out successfully"));
 });
 
-const fetchAllStudents = asyncHandler(async (req,res) => {
-  const students = await Student.find({}).select("-password -refreshToken -fees");
-  if(!students) throw new ApiError(400,"no studnets registerd yet");
+const fetchAllStudents = asyncHandler(async (req, res) => {
+  const students = await Student.find({}).select(
+    "-password -refreshToken"
+  );
+  if (!students) throw new ApiError(400, "no studnets registerd yet");
 
   return res
-  .status(200)
-  .json(
-    new ApiResponse(
-      200,
-      students,
-      "studnets been successfully fetched"
-    )
-  )
+    .status(200)
+    .json(new ApiResponse(200, students, "studnets been successfully fetched"));
 });
 
-const countStudent = asyncHandler(async(req,res) => {
+const countStudent = asyncHandler(async (req, res) => {
   const count = await Student.countDocuments();
-  if(count === undefined) throw new ApiError(500,"internal server error , count got value of undefined");
+  if (count === undefined)
+    throw new ApiError(
+      500,
+      "internal server error , count got value of undefined"
+    );
   return res
-  .status(200)
-  .json(
-    new ApiResponse(
-      200,
-      count,
-      "no of students fetched successfully!"
-    )
-  )
-})
+    .status(200)
+    .json(new ApiResponse(200, count, "no of students fetched successfully!"));
+});
 
-const fetchParticularStudent = asyncHandler(async (req,res) => {
+const fetchParticularStudent = asyncHandler(async (req, res) => {
   const studentId = req.params.id;
-  const student = await Student.findById(studentId).populate("marksheet").select("-password -refreshToken");
-  if(!student) throw new ApiError(400,"no studnet found regarding this student Id")
+  const student = await Student.findById(studentId)
+    .populate("marksheet")
+    .select("-password -refreshToken");
+  if (!student)
+    throw new ApiError(400, "no studnet found regarding this student Id");
   return res
-  .status(200)
-  .json(new ApiResponse(
-    200,
-    student,
-    "successfully fetched the partuclar student"
-  ))
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        student,
+        "successfully fetched the partuclar student"
+      )
+    );
 });
 
 // will write later
 // const collectionFeeThin
-// will collect the no of fees that are not paid , by the studnts 
+// will collect the no of fees that are not paid , by the studnts
 
-const getStudentProfile = asyncHandler(async (req, res) => {
-  // req.params._id // returns undefiend
-  const studentId = req.params.id;
-  console.log(`this is req.params.id ${req.params.id}`);
+const feeStatusOfCurrentMonth = asyncHandler(async (req, res) => {
+  const monthNames = [
+    "jan",
+    "feb",
+    "march",
+    "april",
+    "may",
+    "jun",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ];
+  const currentMonthName = monthNames[new Date().getMonth()];
+  const students = await Student.find({
+    [`fees.${currentMonthName}.isPaid`]:false
+  })
+  .select("-password -refreshToken -marksheet");
 
-  // req.params.id // returns the proper thing ,
+  // no of studntes didn't paid this month bill
+  const countStudentNotPaid = await Student.countDocuments({
+    [`fees.${currentMonthName}.isPaid`]: false
+  });
 
-  // 'req.params' doesn't specifilcly returns anything , gotta dive more deep into it
+  // no of students paid this month bill
+  const countStudentPaid = await Student.countDocuments({
+      [`fees.${currentMonthName}.isPaid`]:true
+  })
 
-  const wantedStudent = await Student.findById(studentId).populate(
-    "feeStructure"
-  ).populate("marksheet");
+  const response = [students,countStudentNotPaid,countStudentPaid]
 
-  if (!wantedStudent) {
-    throw new ApiError(400, "studnet wasn't found!");
-  }
-
+  // later can also add on adiditonal fees and admission fee things 
   return res
-    .status(200)
-    .json(
-      new ApiResponse(200, wantedStudent, "student data fetched successfully")
-    );
+  .status(200)
+  .json(
+    new ApiResponse(
+      200,
+      response,
+      "students with unpaid bills of current months been fetched successfully"
+    )
+  )
+  
 });
 
- export { downloadInvoice, previewInvoice };
+export { previewInvoice };
 
-export { registerStudent, collectFee ,loginStudent,logOutStudent , fetchAllStudents , fetchParticularStudent ,countStudent};
+export {
+  registerStudent,
+  collectFee,
+  loginStudent,
+  logOutStudent,
+  fetchAllStudents,
+  fetchParticularStudent,
+  countStudent,
+  feeStatusOfCurrentMonth
+};

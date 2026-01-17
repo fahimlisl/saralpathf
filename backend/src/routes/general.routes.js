@@ -17,7 +17,8 @@ router.route("/online-registration").post(upload.fields([
 
 
 // admit cards routes
-router.get('/admit-card/:studentId', generateAdmitCard); // stream to browser
+// router.get('/admit-card/:studentId', generateAdmitCard); // stream to browser
+router.post('/admit-card', generateAdmitCard); // stream to browser
 router.get('/admit-card/download/:studentId', downloadAdmitCard); // forces download
 router.get('/admit-card/preview/:studentId', previewAdmitCard); // HTML preview in browser
 router.post('/admit-card/batch', generateMultipleAdmitCards); // batch download as ZIP

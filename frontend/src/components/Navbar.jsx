@@ -22,7 +22,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-10 text-gray-700 font-medium">
           <Link className="hover:text-blue-600 transition" to="/">Home</Link>
           <Link className="hover:text-blue-600 transition" to="/about">About</Link>
-          <Link className="hover:text-blue-600 transition" to="/academics">Academics</Link>
+          <Link className="hover:text-blue-600 transition" to="/admit-card">Admit Card</Link>
           <Link className="hover:text-blue-600 transition" to="/contact">Contact</Link>
           <Link className="hover:text-blue-600 transition" to="/admissions">Admissions</Link>
 
@@ -46,7 +46,8 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t shadow-lg px-6 py-6 space-y-5">
           <Link onClick={() => setOpen(false)} className="block text-lg" to="/">Home</Link>
           <Link onClick={() => setOpen(false)} className="block text-lg" to="/about">About</Link>
-          <Link onClick={() => setOpen(false)} className="block text-lg" to="/academics">Academics</Link>
+          <Link onClick={() => setOpen(false)} className="block text-lg" to="/admit-card">Admit Card</Link>
+          <Link onClick={() => setOpen(false)} className="block text-lg" to="/admissions">Admissions</Link>
           <Link onClick={() => setOpen(false)} className="block text-lg" to="/contact">Contact</Link>
 
           <Link

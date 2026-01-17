@@ -1,4 +1,5 @@
 import { useState } from "react"
+import axios from "axios"
 
 export default function Admissions() {
   const [form, setForm] = useState({
@@ -16,11 +17,15 @@ export default function Admissions() {
   const [photo, setPhoto] = useState(null)
   const [birthCertificate, setBirthCertificate] = useState(null)
 
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const[application_Id,setapplication_Id] = useState(null)
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!photo || !birthCertificate) {
@@ -28,8 +33,34 @@ export default function Admissions() {
       return
     }
 
-    console.log(form, photo, birthCertificate)
-    alert("Application submitted (API integration next)")
+    try {
+      setLoading(true)
+
+      const formData = new FormData()
+
+      Object.keys(form).forEach(key => {
+        formData.append(key, form[key])
+      })
+
+      formData.append("photo", photo)
+      formData.append("brithCertificate", birthCertificate)
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/general/online-registration`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" }
+        }
+      )
+      const appId = response.data.data.application_Id
+      setapplication_Id(appId)
+      setSuccess(true)
+    } catch (err) {
+      console.error(err)
+      alert(err.response?.data?.message || "Registration failed")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -69,49 +100,62 @@ export default function Admissions() {
               Fill in the details carefully. All fields marked * are mandatory.
             </p>
 
-            <form onSubmit={handleSubmit} className="mt-12 grid md:grid-cols-2 gap-8">
-
-              <Input label="Full Name *" name="fullName" onChange={handleChange} />
-              <Input label="Email" name="email" onChange={handleChange} />
-              <Input label="Phone Number *" name="phoneNumber" onChange={handleChange} />
-              <Input label="Date of Birth *" type="date" name="birthDate" onChange={handleChange} />
-
-              <Input label="City *" name="city" onChange={handleChange} />
-              <Input label="State *" name="state" onChange={handleChange} />
-
-              <Input label="Address *" name="address" onChange={handleChange} full />
-
-              <Input label="Desired Class" name="desiredClass" onChange={handleChange} type="number" />
-
-              <Select
-                label="Type of Class"
-                name="typeOfClass"
-                onChange={handleChange}
-                options={[
-                  "Jamiah",
-                  "Hifz-A",
-                  "Hifz-B",
-                  "Hifz-C",
-                  "Hifz-D",
-                  "Edadiah-I",
-                  "Edadiah-II",
-                  "Edadiah-III"
-                ]}
-              />
-
-              <FileInput label="Upload Student Photo *" onChange={setPhoto} />
-              <FileInput label="Upload Birth Certificate *" onChange={setBirthCertificate} />
-
-              <div className="md:col-span-2 mt-6">
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition shadow-lg"
-                >
-                  Submit Application
-                </button>
+            {success ? (
+              <div className="text-center py-20">
+                <h3 className="text-3xl font-bold text-green-600">
+                  Application Submitted Successfully 🎉
+                </h3>
+                <p className="text-gray-500 mt-4">
+                  Your Application Id is <span className="text-green-600">{application_Id}</span> kindly keep this id for further refrence and amdit card generation.
+                </p>
               </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="mt-12 grid md:grid-cols-2 gap-8">
 
-            </form>
+                <Input label="Full Name *" name="fullName" onChange={handleChange} />
+                <Input label="Email" name="email" onChange={handleChange} />
+                <Input label="Phone Number *" name="phoneNumber" onChange={handleChange} />
+                <Input label="Date of Birth *" type="date" name="birthDate" onChange={handleChange} />
+
+                <Input label="City *" name="city" onChange={handleChange} />
+                <Input label="State *" name="state" onChange={handleChange} />
+
+                <Input label="Address *" name="address" onChange={handleChange} full />
+
+                <Input label="Desired Class" name="desiredClass" onChange={handleChange} />
+
+                <Select
+                  label="Type of Class"
+                  name="typeOfClass"
+                  onChange={handleChange}
+                  options={[
+                    "Jamiah",
+                    "Hifz-A",
+                    "Hifz-B",
+                    "Hifz-C",
+                    "Hifz-D",
+                    "Edadiah-I",
+                    "Edadiah-II",
+                    "Edadiah-III",
+                    "Rapid"
+                  ]}
+                />
+
+                <FileInput label="Upload Student Photo *" onChange={setPhoto} />
+                <FileInput label="Upload Birth Certificate *" onChange={setBirthCertificate} />
+
+                <div className="md:col-span-2 mt-6">
+                  <button
+                    disabled={loading}
+                    type="submit"
+                    className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition shadow-lg"
+                  >
+                    {loading ? "Submitting..." : "Submit Application"}
+                  </button>
+                </div>
+
+              </form>
+            )}
 
           </div>
         </div>
@@ -147,7 +191,7 @@ function Select({ label, name, options, onChange }) {
       >
         <option value="">Select</option>
         {options.map(op => (
-          <option key={op}>{op}</option>
+          <option key={op} value={op}>{op}</option>
         ))}
       </select>
     </div>

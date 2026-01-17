@@ -35,7 +35,7 @@ const onlineRegistrationSchema = new mongoose.Schema({
         required:true
     },
     application_Id:{
-        type:String,
+        type:Number,
         required:true
     },
     brithCertificate:{
@@ -47,7 +47,7 @@ const onlineRegistrationSchema = new mongoose.Schema({
     },
     typeOfClass:{
         type:String,
-        enum:["Jamiah","Hifz-A","Hifz-B","Hifz-C","Hifz-D","Edadiah-I","Edadiah-II","Edadiah-III"]
+        enum:["Jamiah","Hifz-A","Hifz-B","Hifz-C","Hifz-D","Edadiah-I","Edadiah-II","Edadiah-III",""]
     } // AT LEAST TYPEOF CLASS OR DESIRED CLASS ONE OF THE FIELDS REQUIRED ALSO A FEW CHECKPOINTS WILL BE DONE IN FORNTEND , GUESSING MOST PROBABLY
 },{timestamps:true})
 

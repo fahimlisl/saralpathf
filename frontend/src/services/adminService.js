@@ -14,6 +14,15 @@ export const generateStudentMarksheet = (studentId) =>
   API.get(`/admin/marksheet/${studentId}`, { responseType: "blob" })
 export const registerStudent = (data) => API.post("/admin/register-student",data)
 
+// fee section
+export const fetchCurrentMonthFeeStatus = () => API.get("/admin/feeStatusOfCurrentMonth")
+export const collectStudentFee = (id, data) => API.patch(`/admin/collect-fee/${id}`, data)
+export const previewInvoice = (studentId, month) =>
+  API.get(`/admin/invoice/${studentId}/${month}`, {
+    responseType: "blob"
+  });
+
+
 
 
 // teacher thing starts here
