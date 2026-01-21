@@ -197,7 +197,6 @@ const fetchAssignedStudents = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Unauthorized access");
   }
 
-  // find students whose marksheet contains at least one subject of this teacher
   const students = await Student.find()
     .populate({
       path: "marksheet",
@@ -205,12 +204,11 @@ const fetchAssignedStudents = asyncHandler(async (req, res) => {
         "terms.subjects.teacher": teacherId
       }
     })
-    .select("fullName section marksheet");
+    // .select("fullName section marksheet");
 
   // remove students whose marksheet didn't match
   const filteredStudents = students.filter(s => s.marksheet);
 
-  // format resuls
   const result = filteredStudents.map(student => {
     const ms = student.marksheet;
     const filteredTerms = ms.terms
@@ -226,12 +224,14 @@ const fetchAssignedStudents = asyncHandler(async (req, res) => {
           subjects: teacherSubjects
         };
       })
-      .filter(Boolean); // remove null terms
+      .filter(Boolean); 
 
     return {
       _id: student._id,
       fullName: student.fullName,
       section: student.section,
+      classCurrent: student.classCurrent, 
+      typeOfClass: student.typeOfClass,
       marksheet: {
         _id: ms._id,
         terms: filteredTerms

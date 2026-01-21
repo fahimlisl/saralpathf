@@ -4,7 +4,7 @@ import {
     previewMarksheet, 
     generateMultipleMarksheets 
 } from '../controllers/marksheet.controllers.js';
-import { loginStudent, logOutStudent } from "../controllers/student.controllers.js";
+import { fetchParticularStudent, loginStudent, logOutStudent } from "../controllers/student.controllers.js";
 import {verifyJWT} from "../middlewares/auth.middlewares.js"
 
 const router = Router();
@@ -12,6 +12,7 @@ const router = Router();
 
 router.route("/login").post(loginStudent)
 router.route("/logout").post(verifyJWT,logOutStudent)
+router.route("/profile/:id").get(verifyJWT, fetchParticularStudent)
 
 
 // Marksheet routes
@@ -23,7 +24,7 @@ router.route("/marksheet/:studentId")
 
 router.route("/marksheet/preview/:studentId")
     .get(
-        // verifyJWT,
+        // verifyJWT, // will be needing to uncomment before putting to production
          previewMarksheet);
 
 // router.route("/marksheet/batch")

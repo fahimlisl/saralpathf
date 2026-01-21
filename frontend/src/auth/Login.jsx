@@ -8,7 +8,7 @@ export default function Login() {
 
   const [role, setRole] = useState("admin")
   const [identifier, setIdentifier] = useState("")
-  const [password, setPassword] = useState("")
+  const [password, reminderPassword] = useState("")
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -25,18 +25,29 @@ export default function Login() {
     }
 
     try {
+      let res
+
       if (role === "admin") {
-        await loginAdmin(payload)
+        res = await loginAdmin(payload)
+        localStorage.setItem("accessToken", res.data.data.accessToken)
+        localStorage.setItem("role", "admin")
+        localStorage.setItem("admin", JSON.stringify(res.data.data.loginUser))
         navigate("/admin/dashboard")
       }
 
       if (role === "teacher") {
-        await loginTeacher(payload)
+        res = await loginTeacher(payload)
+        localStorage.setItem("accessToken", res.data.data.accessToken)
+        localStorage.setItem("role", "teacher")
+        localStorage.setItem("teacher", JSON.stringify(res.data.data.loginUser))
         navigate("/teacher/dashboard")
       }
 
       if (role === "student") {
-        await loginStudent(payload)
+        res = await loginStudent(payload)
+        localStorage.setItem("accessToken", res.data.data.accessToken)
+        localStorage.setItem("role", "student")
+        localStorage.setItem("student", JSON.stringify(res.data.data.loginUser))
         navigate("/student/dashboard")
       }
 
@@ -49,10 +60,8 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#020617] to-[#020617] flex items-center justify-center px-6 text-white">
-
       <div className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl p-10">
 
-        {/* Logo */}
         <div className="flex justify-center mb-8">
           <img
             src="https://res.cloudinary.com/dkrwq4wvi/image/upload/v1768457598/saralpath_logo.png"
@@ -62,9 +71,6 @@ export default function Login() {
         </div>
 
         <h2 className="text-3xl font-bold text-center">Portal Login</h2>
-        <p className="text-center text-gray-300 mt-2">
-          Login to your institution account
-        </p>
 
         <div className="grid grid-cols-3 gap-3 mt-8">
           {["admin", "teacher", "student"].map(r => (
@@ -82,12 +88,6 @@ export default function Login() {
           ))}
         </div>
 
-        {role === "student" && (
-          <p className="mt-4 text-sm text-blue-300 text-center">
-            Student password is your Date of Birth (DOB)
-          </p>
-        )}
-
         <form onSubmit={handleLogin} className="mt-8 space-y-5">
           <input
             type="text"
@@ -95,16 +95,16 @@ export default function Login() {
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             required
-            className="w-full px-5 py-3 rounded-xl bg-white/10 border border-white/20 placeholder-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full px-5 py-3 rounded-xl bg-white/10 border border-white/20"
           />
 
           <input
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => reminderPassword(e.target.value)}
             required
-            className="w-full px-5 py-3 rounded-xl bg-white/10 border border-white/20 placeholder-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full px-5 py-3 rounded-xl bg-white/10 border border-white/20"
           />
 
           {error && (
@@ -116,12 +116,11 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 py-3 rounded-xl font-semibold shadow-lg hover:scale-[1.02] transition flex justify-center items-center gap-2"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 py-3 rounded-xl font-semibold shadow-lg flex justify-center gap-2"
           >
             {loading && <Loader2 className="animate-spin" size={18} />}
-            {loading ? "Authenticating..." : "Login to Portal"}
+            {loading ? "Authenticating..." : "Login"}
           </button>
-
         </form>
       </div>
     </div>
