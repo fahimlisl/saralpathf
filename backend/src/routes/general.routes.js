@@ -2,6 +2,7 @@ import { Router } from "express";
 import { upload } from "../middlewares/multer.middlewares.js";
 import { downloadAdmitCard, previewAdmitCard, register } from "../controllers/onlineRegistration.controllers.js";
 import { generateAdmitCard,generateMultipleAdmitCards} from "../controllers/onlineRegistration.controllers.js";
+import { fetchSettingsStatus } from "../controllers/settings.controllers.js";
 const router = Router();
 
 router.route("/online-registration").post(upload.fields([
@@ -24,4 +25,6 @@ router.get('/admit-card/preview/:studentId', previewAdmitCard); // HTML preview 
 router.post('/admit-card/batch', generateMultipleAdmitCards); // batch download as ZIP
 
 
+// general online admission
+router.route("/fetchSettingsStatus").get(fetchSettingsStatus)
 export default router

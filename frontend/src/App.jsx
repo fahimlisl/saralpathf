@@ -17,6 +17,7 @@ import TeacherDashboard from "./components/TeacherDashboard.jsx";
 import AdmitCard from "./pages/AdmitCard.jsx";
 import Contact from "./pages/Contact.jsx";
 import StudentDashboard from "./pages/StudentDashboard.jsx";
+import Settings from "./pages/admin/Settings.jsx";
 
 const getToken = () => localStorage.getItem("accessToken");
 const getRole = () => localStorage.getItem("role");
@@ -142,6 +143,17 @@ export default function App() {
           element={
             <ProtectedRoute role="teacher">
               <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/settings"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminLayout>
+                <Settings />
+              </AdminLayout>
             </ProtectedRoute>
           }
         />

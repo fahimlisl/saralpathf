@@ -4,6 +4,7 @@ import { verifyJWT } from "../middlewares/auth.middlewares.js";
 import { collectFee, countStudent, feeStatusOfCurrentMonth, fetchAllStudents, fetchParticularStudent, previewInvoice, registerStudent } from "../controllers/student.controllers.js";
 import { countTeacher, editTeacher, fetchAllTeacher, fetchParticularTeacher, registerTeacher } from "../controllers/teacher.controllers.js";
 import { generateMarksheet } from "../controllers/marksheet.controllers.js";
+import { fetchSettingsStatus, toggleAdmissionStatus } from "../controllers/settings.controllers.js";
 
 
 const router = Router();
@@ -41,5 +42,11 @@ router.route("/marksheet/:studentId")
     .get(
         verifyJWT,
          generateMarksheet);
+
+
+// settings 
+router.route("/fetchSettingsStatus").get(verifyJWT,fetchSettingsStatus)
+router.route("/updateOnlineAdmission").patch(verifyJWT,toggleAdmissionStatus)
+
 
 export default router; 
